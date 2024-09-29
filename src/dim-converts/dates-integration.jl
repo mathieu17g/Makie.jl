@@ -59,7 +59,6 @@ needs_tick_update_observable(conversion::DateTimeConversion) = conversion.type
 create_dim_conversion(::Type{<:Dates.AbstractTime}) = DateTimeConversion()
 MakieCore.should_dim_convert(::Type{<:Dates.AbstractTime}) = true
 
-
 function convert_dim_value(conversion::DateTimeConversion, value::Dates.TimeType)
     return date_to_number(conversion.type[], value)
 end
@@ -86,8 +85,15 @@ function convert_dim_observable(conversion::DateTimeConversion, values::Observab
     return result
 end
 
-function get_ticks(conversion::DateTimeConversion, ticks, scale, formatter, vmin, vmax)
+# Default implementation for `get_ticklabels` with `DateFormat`.
+# Used before DateTimeConversion is set to the axis via plots addition.
+get_ticklabels(::DateFormat, values) = get_ticklabels(Automatic(), values)
 
+function get_ticklabels(::Type{T}, df::DateFormat, values) where {T<:TimeType}
+    return [Dates.format(number_to_date(T, v), df) for v in values]
+end
+
+function get_ticks(conversion::DateTimeConversion, ticks, scale, formatter, vmin, vmax)
     if scale != identity
         error("$(scale) scale not supported for DateTimeConversion")
     end
@@ -96,7 +102,12 @@ function get_ticks(conversion::DateTimeConversion, ticks, scale, formatter, vmin
     # in that case, we can't really have any conversion
     T <: Automatic && return [], []
 
-    if T <: DateTime
+    if T <: Union{Date,DateTime}
+        if T == Date
+            # Convert T float extrema values to DateTime corresponding float values
+            vmin = date_to_number(DateTime, DateTime(number_to_date(T, vmin)))
+            vmax = date_to_number(DateTime, DateTime(number_to_date(T, vmax)))
+        end
         if ticks isa WilkinsonTicks
             k_min = ticks.k_min
             k_max = ticks.k_max
@@ -104,12 +115,34 @@ function get_ticks(conversion::DateTimeConversion, ticks, scale, formatter, vmin
             k_min = 2
             k_max = 3
         end
-        conversion, dates = PlotUtils.optimize_datetime_ticks(vmin, vmax; k_min=k_min, k_max=k_max)
-        return conversion, dates
+        tickvalues, ticklabels = PlotUtils.optimize_datetime_ticks(vmin, vmax; k_min=k_min, k_max=k_max)
+        if T == Date
+            tickvalues = date_to_number.((T,), T.(number_to_date.((DateTime,), tickvalues)))
+        end
+        ticklabels = if formatter isa Automatic
+            ticklabels
+        elseif formatter isa DateFormat
+            get_ticklabels(T, formatter, tickvalues)
+        elseif formatter isa Function
+            formatter(tickvalues)
+        else
+            error("$(formatter) not supported for DateTimeConversion")
+        end
+        return tickvalues, ticklabels
+    elseif T == Time
+        tickvalues = get_tickvalues(ticks, scale, vmin, vmax)
+        ticklabels = if formatter isa Automatic
+            times = number_to_date.(T, round.(Int64, tickvalues))
+            string.(times)
+        elseif formatter isa DateFormat
+            get_ticklabels(T, formatter, tickvalues)
+        elseif formatter isa Function
+            formatter(tickvalues)
+        else
+            error("$(formatter) not supported for DateTimeConversion")
+        end
+        return tickvalues, ticklabels
     else
-        # TODO implement proper ticks for Time Date
-        tickvalues = get_tickvalues(formatter, scale, vmin, vmax)
-        dates = number_to_date.(T, round.(Int64, tickvalues))
-        return tickvalues, string.(dates)
+        error("$(T) not supported for DateTimeConversion")
     end
 end
