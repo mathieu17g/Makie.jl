@@ -7,6 +7,10 @@ vec2string(p::StaticVector{3}) = @sprintf("(%0.3f, %0.3f, %0.3f)", p[1], p[2], p
 position2string(p::StaticVector{2}) = @sprintf("x: %0.6f\ny: %0.6f", p[1], p[2])
 position2string(p::StaticVector{3}) = @sprintf("x: %0.6f\ny: %0.6f\nz: %0.6f", p[1], p[2], p[3])
 
+value2string(conversion::T, value) where T <: Union{Nothing, <:AbstractDimConversion} = (converted = convert_value_dim(conversion, value)) isa AbstractFloat ? @sprintf("%0.3f", converted) : string(converted)
+dimspos2string(conversions, p::StaticVector{2}) = @sprintf("x: %s\ny: %s", (value2string(c, p) for (c, p) in zip(ntuple(i -> conversions[i], 2), p))...)
+dimspos2string(conversions, p::StaticVector{3}) = @sprintf("x: %s\ny: %s\nz: %s", (value2string(c, p) for (c, p) in zip(ntuple(i -> conversions[i], 3), p))...)
+
 function bbox2string(bbox::Rect3)
     p0 = origin(bbox)
     p1 = p0 .+ widths(bbox)
@@ -543,7 +547,8 @@ function show_data(inspector::DataInspector, plot::Union{Lines, LineSegments}, i
     )
 
     if to_value(get(plot, :inspector_label, automatic)) == automatic
-        tt.text[] = position2string(eltype(plot[1][])(pos))
+        conversions = get_conversions(plot)
+        tt.text[] = dimspos2string(conversions, eltype(plot[1][])(pos))
     else
         tt.text[] = plot[:inspector_label][](plot, idx, eltype(plot[1][])(pos))
     end
