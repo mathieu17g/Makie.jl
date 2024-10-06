@@ -85,6 +85,12 @@ function convert_dim_observable(conversion::DateTimeConversion, values::Observab
     return result
 end
 
+# Conversions to DateTimeConversion.type
+function convert_value_dim(conversion::DateTimeConversion, value)
+    return number_to_date(conversion.type[], value)
+end
+convert_value_dim(::Union{Nothing, NoDimConversion}, value) = value
+
 # Default implementation for `get_ticklabels` with `DateFormat`.
 # Used before DateTimeConversion is set to the axis via plots addition.
 get_ticklabels(::DateFormat, values) = get_ticklabels(Automatic(), values)
