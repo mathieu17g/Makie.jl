@@ -450,7 +450,9 @@ function show_data(inspector::DataInspector, plot::Scatter, idx)
     update_tooltip_alignment!(inspector, proj_pos)
 
     if to_value(get(plot, :inspector_label, automatic)) == automatic
-        tt.text[] = position2string(pos)
+        conversions = get_conversions(plot)
+        tt.text[] = dimspos2string(conversions, eltype(plot[1][])(pos))
+        # tt.text[] = position2string(pos)
     else
         tt.text[] = plot[:inspector_label][](plot, idx, pos)
     end
