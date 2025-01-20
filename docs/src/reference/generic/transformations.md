@@ -39,7 +39,7 @@ To accumulate transformation you need to add `Accum` as the first argument, e.g.
 
 The `transform_func` is a function that gets applied to the input data of a plot after `convert_arguments()` (type normalization) and dim_converts (handling of units and categorical value).
 It is typically managed by an Axis.
-For example, if you set `ax.xscale[] = log`, the underlying `ax.scene` will have it's transformation function set to `(log, indentity)` which will propagate to the plots inside the axis/scene.
+For example, if you set `ax.xscale[] = log`, the underlying `ax.scene` will have it's transformation function set to `(log, identity)` which will propagate to the plots inside the axis/scene.
 
 ```julia
 using Makie
