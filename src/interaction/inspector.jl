@@ -51,6 +51,10 @@ value2string(conversion::T, value) where T <: Union{Nothing, <:AbstractDimConver
 dimspos2string(conversions, p::StaticVector{2}) = @sprintf("x: %s\ny: %s", (value2string(c, p) for (c, p) in zip(ntuple(i -> conversions[i], 2), p))...)
 dimspos2string(conversions, p::StaticVector{3}) = @sprintf("x: %s\ny: %s\nz: %s", (value2string(c, p) for (c, p) in zip(ntuple(i -> conversions[i], 3), p))...)
 
+value2string(conversion::T, value) where T <: Union{Nothing, <:AbstractDimConversion} = (converted = convert_value_dim(conversion, value)) isa AbstractFloat ? @sprintf("%0.3f", converted) : string(converted)
+dimspos2string(conversions, p::StaticVector{2}) = @sprintf("x: %s\ny: %s", (value2string(c, p) for (c, p) in zip(ntuple(i -> conversions[i], 2), p))...)
+dimspos2string(conversions, p::StaticVector{3}) = @sprintf("x: %s\ny: %s\nz: %s", (value2string(c, p) for (c, p) in zip(ntuple(i -> conversions[i], 3), p))...)
+
 function bbox2string(bbox::Rect3)
     p0 = origin(bbox)
     p1 = p0 .+ widths(bbox)
